@@ -2,6 +2,7 @@ using App.Functions.Responses;
 using App.Models.Users;
 using App.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -35,7 +36,22 @@ namespace App.Functions.Users
 
             try
             {
-                actionResult = new OkObjectResult(await _userService.GetUsersAsync(req.QueryString.ToString()));
+                if (guid != null)
+                {
+                    User user = await _userService.GetById(Guid.Parse(guid));
+                    if (user != null)
+                    {
+                        actionResult = new OkObjectResult(user);
+                    }
+                    else
+                    {
+                        return new NotFoundResult();
+                    }
+                }
+                else
+                {
+                    actionResult = new OkObjectResult(await _userService.GetAllAsync(req.QueryString.ToString()));
+                }
             }
             catch (Exception e)
             {
@@ -59,7 +75,7 @@ namespace App.Functions.Users
             IActionResult returnValue;
             try
             {
-                returnValue = new CreatedObjectResult(await _userService.AddItemAsync(user));
+                returnValue = new CreatedObjectResult(await _userService.AddAsync(user));
             }
             catch (ArgumentNullException ane)
             {
@@ -77,6 +93,100 @@ namespace App.Functions.Users
                 returnValue = new BadRequestObjectResult(String.Format("Um erro inesperado ocorreu ao criar o usuário. Por favor, entre em contato com o administrador.", e));
             }
 
+            return returnValue;
+        }
+
+        [FunctionName("UsersUpdate")]
+        public async Task<IActionResult> Put(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "users/{guid}")]
+            HttpRequest req,
+            CancellationToken cts,
+            ILogger log,
+            Guid guid)
+        {
+            IActionResult returnValue;
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            User user = JsonSerializer.Deserialize<User>(requestBody);
+
+            try
+            {
+                await _userService.UpdateAsync(guid, user);
+                returnValue = new NoContentResult();
+            }
+            catch (ArgumentException ae)
+            {
+                log.LogWarning(ae.ToString());
+                returnValue = new BadRequestObjectResult(ae.Message);
+            }
+            catch (Exception e)
+            {
+                log.LogError("An exception occurred when tried to update user. Message: {0}", e);
+                returnValue = new BadRequestObjectResult("Um erro inesperado ocorreu ao criar o usuário. Por favor, entre em contato com o administrador.");
+            }
+            return returnValue;
+        }
+
+        [FunctionName("UsersPartialUpdate")]
+        public async Task<IActionResult> PartialUpdate(
+            [HttpTrigger(AuthorizationLevel.Function, "patch", Route = "users/{guid}")]
+            HttpRequest req,
+            CancellationToken cts,
+            ILogger log,
+            Guid guid)
+        {
+            IActionResult returnValue = null;
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            JsonPatchDocument<User> patchUser = Newtonsoft.Json.JsonConvert.DeserializeObject<JsonPatchDocument<User>>(requestBody);
+
+            if (patchUser == null)
+            {
+                return new BadRequestObjectResult("The body of the request cannot be null");
+            }
+
+            try
+            {
+                await _userService.UpdatePartialAsync(guid, patchUser);
+                returnValue = new NoContentResult();
+            }
+            catch (ApplicationException ae)
+            {
+                log.LogWarning(ae.ToString());
+                returnValue = new NotFoundObjectResult(ae.Message);
+            }
+            catch (Exception e)
+            {
+                log.LogError("An exception occurred when partially updating user. Message: {0}", e);
+                returnValue = new BadRequestObjectResult(String.Format("An exception occurred when partially updating user. Message: {0}", e));
+            }
+
+            return returnValue;
+        }
+
+        [FunctionName("UsersDelete")]
+        public async Task<IActionResult> Delete(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "users/{guid}")]
+            HttpRequest req,
+            CancellationToken cts,
+            ILogger log,
+            Guid guid)
+        {
+            IActionResult returnValue = null;
+
+            try
+            {
+                await _userService.DeleteAsync(guid);
+                returnValue = new OkResult();
+            }
+            catch (ApplicationException ae)
+            {
+                log.LogWarning(ae.ToString());
+                returnValue = new NotFoundObjectResult(ae.Message);
+            }
+            catch (Exception e)
+            {
+                log.LogError("An exception occurred when deleting user. Message: {0}", e);
+                returnValue = new BadRequestObjectResult(String.Format("An exception occurred when deleting user. Message: {0}", e));
+            }
             return returnValue;
         }
     }

@@ -19,6 +19,8 @@ namespace App.Models.Users
         public int? Weight { get; set; }
         public int? Height { get; set; }
         public string FacebookId { get; set; }
+        
+        [JsonIgnore]
         public string Password { get; set; }
         public DateTime? LastLogin { get; set; }
     }
