@@ -1,17 +1,15 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace App.Models
+namespace App.Model
 {
     public class BaseEntity
     {
-        [JsonIgnore]
         public DateTime Created { get; set; }
-
-        [JsonIgnore]
         public DateTime Updated { get; set; }
-
-        [JsonIgnore]
         public bool Deleted { get; set; }
+
+        [JsonProperty(PropertyName = "entityType")]
+        public string EntityType { get; set; }
     }
 }

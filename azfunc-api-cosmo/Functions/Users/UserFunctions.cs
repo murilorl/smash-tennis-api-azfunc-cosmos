@@ -1,5 +1,6 @@
 using App.Functions.Responses;
-using App.Models.Users;
+using App.Model;
+using App.Model.UserModel;
 using App.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
@@ -186,6 +187,68 @@ namespace App.Functions.Users
             {
                 log.LogError("An exception occurred when deleting user. Message: {0}", e);
                 returnValue = new BadRequestObjectResult(String.Format("An exception occurred when deleting user. Message: {0}", e));
+            }
+            return returnValue;
+        }
+
+        [FunctionName("AuthFacebookLogin")]
+        public async Task<IActionResult> AuthFacebookLogin(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "auth/facebook/login")]
+            HttpRequest req,
+            CancellationToken cts,
+            ILogger log)
+        {
+            IActionResult returnValue;
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            FacebookProfile fbProfile = JsonSerializer.Deserialize<FacebookProfile>(requestBody, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (String.IsNullOrWhiteSpace(fbProfile.Id))
+            {
+                return new BadRequestObjectResult("Id de usuário do Facebook não fornecido ou em branco");
+            }
+
+            try
+            {
+                // validate the token
+                //  check if an identity exists for the Facebook Id. Since we might not know the app
+                User user = await _userService.GetByFacebookId(fbProfile.Id, fbProfile.Email);
+                if (user == null)
+                {
+                    user = new User
+                    {
+                        FirstName = fbProfile.FirstName,
+                        LastName = fbProfile.LastName,
+                        Email = fbProfile.Email,
+                        FacebookProfile = fbProfile,
+                        LastLogin = DateTime.Now
+                    };
+                    returnValue = new CreatedObjectResult(await _userService.AddAsync(user));
+                }
+                else
+                {
+                    user.LastLogin = DateTime.Now;
+                    user = await _userService.UpdateAsync(user.Id, user);
+                    returnValue = new OkObjectResult(user);
+                }
+
+                //id at this time it might be better to use the email as the partition key
+
+
+                // If it does, vallidate the token
+                // if token is valid, update the last login of the token and return sucess
+
+            }
+            catch (ArgumentException ae)
+            {
+                log.LogWarning(ae.ToString());
+                returnValue = new BadRequestObjectResult(ae.Message);
+            }
+            catch (Exception e)
+            {
+                log.LogError("An exception occurred when tried to update user. Message: {0}", e);
+                returnValue = new BadRequestObjectResult("Um erro inesperado ocorreu ao criar o usuário. Por favor, entre em contato com o administrador.");
             }
             return returnValue;
         }

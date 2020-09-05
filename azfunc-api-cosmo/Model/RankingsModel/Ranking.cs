@@ -1,8 +1,7 @@
-﻿using App.Models.Users;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 
-namespace App.Models.Rankings
+namespace App.Model
 {
     public class Ranking : BaseEntity
     {

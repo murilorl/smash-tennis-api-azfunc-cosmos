@@ -26,6 +26,7 @@ namespace App.Core
             builder.Services.AddScoped<ICosmosService, CosmosService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRankingsService, RankingsService>();
+            builder.Services.AddScoped<ITournamentService, TournamentService>();
         }
     }
 }

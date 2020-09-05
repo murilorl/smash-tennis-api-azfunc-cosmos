@@ -1,4 +1,4 @@
-﻿using App.Models.Users;
+﻿using App.Model;
 using Microsoft.AspNetCore.JsonPatch;
 using System;
 using System.Collections.Generic;
@@ -11,9 +11,9 @@ namespace App.Services
         Task<User> GetById(Guid id);
         Task<IEnumerable<User>> GetAllAsync(string queryString);
         Task<User> AddAsync(User user);
-        Task UpdateAsync(Guid id, User user);
+        Task<User> UpdateAsync(Guid id, User user);
         Task UpdatePartialAsync(Guid id, JsonPatchDocument<User> patchUser);
         Task DeleteAsync(Guid id);
-
+        Task<User> GetByFacebookId(string facebookId, string email);
     }
 }

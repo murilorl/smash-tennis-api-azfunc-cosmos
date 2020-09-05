@@ -1,6 +1,4 @@
-﻿using App.Models.Rankings;
-using App.Models.Users;
-using Microsoft.AspNetCore.JsonPatch;
+﻿using App.Model;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

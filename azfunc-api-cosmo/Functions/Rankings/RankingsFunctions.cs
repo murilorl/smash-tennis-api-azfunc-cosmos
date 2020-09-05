@@ -1,4 +1,4 @@
-﻿using App.Models.Rankings;
+﻿using App.Model;
 using App.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace App.Functions.Rankings
